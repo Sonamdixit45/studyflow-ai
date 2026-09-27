@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const generateStudySet = require('./generate');
+
 const app = express();
 
 app.use(cors());
@@ -12,16 +14,36 @@ app.get('/', (req, res) => {
     message: 'StudyFlow AI server is running',
   });
 });
-app.post('/api/generate', (req, res) => {
+
+app.post('/api/generate', async (req, res) => {
   const { prompt } = req.body;
 
-  console.log('Received prompt:', prompt);
+  if (!prompt || !prompt.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Prompt is required',
+    });
+  }
 
-  res.json({
-    success: true,
-    message: 'Study set request received',
-    prompt: prompt,
-  });
+  try {
+    console.log('Generating study set for:', prompt);
+
+    const studySet = await generateStudySet(prompt);
+
+    console.log('Study set generated successfully');
+
+    res.json({
+      success: true,
+      data: studySet,
+    });
+  } catch (error) {
+    console.error('Generation error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate study set',
+    });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
